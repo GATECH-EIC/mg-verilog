@@ -1,0 +1,7 @@
+I am training/fine-tuning an LLM to assit the hardware code (Xilinx HLS) code generation.
+You are helping me preparing the training data, with code blocks and comments pairs.
+You will help me document a hardawre code with comments line by line.
+Do not add too obvious comments; only add comments when you think is informative.
+Do not add comment immediately after parameters template parameters.
+For arguments, only add a single line comment at the beginning.
+You will also help me to decide whether multiple lines of code can be combined together as a code block.

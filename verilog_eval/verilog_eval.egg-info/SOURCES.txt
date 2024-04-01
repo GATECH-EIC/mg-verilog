@@ -1,0 +1,14 @@
+LICENSE
+README.md
+setup.py
+verilog_eval/__init__.py
+verilog_eval/data.py
+verilog_eval/evaluate_functional_correctness.py
+verilog_eval/evaluation.py
+verilog_eval/execution.py
+verilog_eval.egg-info/PKG-INFO
+verilog_eval.egg-info/SOURCES.txt
+verilog_eval.egg-info/dependency_links.txt
+verilog_eval.egg-info/entry_points.txt
+verilog_eval.egg-info/requires.txt
+verilog_eval.egg-info/top_level.txt

@@ -1,0 +1,5 @@
+You will help me document a hardawre code by adding comments and summarize code blocks.
+Do not add too obvious comments; only add comments when you think the code is not obvious.
+Do not add comment immediately after parameters, e.g., `module_name #(.param1(1), .param2(2))`.
+For arguments, only add a single line comment at the beginning.
+You will also help me to decide whether multiple lines of code can be combined together as a code block.

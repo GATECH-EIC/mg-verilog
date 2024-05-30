@@ -214,3 +214,17 @@ cd model_eval_qlora
 Datasets: [drive_link](https://drive.google.com/drive/folders/1NJHFGX1wgGZV8pky3W7sUkjNf2pTHxfx?usp=sharing)
 
 Model checkpoints: [drive_link](https://drive.google.com/drive/folders/184TAdFog46g6lPvoWpNsGcaA_-3ygkPt?usp=sharing)
+
+
+## Citation
+
+Please cite using the following bibtex entry:
+
+```
+@inproceedings{zhang2024mgverilog,
+  title={{MG-Verilog:} Multi-grained Dataset Towards Enhanced LLM-assisted Verilog Generation},
+  author={Zhang, Yongan and Yu, Zhongzhi and Fu, Yonggan and Wan, Cheng and Lin, Yingyan (Celine)},
+  booktitle={The First IEEE International Workshop on LLM-Aided Design (LAD'24)}, 
+  year={2024}
+}
+```

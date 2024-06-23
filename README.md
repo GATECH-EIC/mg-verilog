@@ -1,4 +1,4 @@
-# Data4AIGChip: An Automated Data Generation and Validation Flow for LLM-assisted Hardware Design
+# MG-Verilog: Multi-grained Dataset Towards Enhanced LLM-assisted Verilog Generation
 This is a repository for Data4AIGChip, an automated framework for data generation and validation, designed to enhance the fine-tuning of Large Language Models (LLMs) in accelerator code generation. This repository encompasses the following key components
 - Dataset generation
 - Supervised fine-tuning

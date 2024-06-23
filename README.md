@@ -1,5 +1,5 @@
-# MG-Verilog: Multi-grained Dataset Towards Enhanced LLM-assisted Verilog Generation
-This is a repository for MG-Verilog, an automated framework for data generation and validation, designed to enhance the fine-tuning of Large Language Models (LLMs) in accelerator code generation. This repository encompasses the following key components
+# Data4AIGChip: An Automated Data Generation and Validation Flow for LLM-assisted Hardware Design
+This is a repository for Data4AIGChip, an automated framework for data generation and validation, designed to enhance the fine-tuning of Large Language Models (LLMs) in accelerator code generation. This repository encompasses the following key components
 - Dataset generation
 - Supervised fine-tuning
 - Collected datasets and fine-tuned model checkpoints
@@ -74,6 +74,7 @@ This step involves generating block summaries based on the line-by-line document
 For generating these summaries, we recommend using `openai-gpt` models due to their capacity for handling larger token lengths.
 ```
 $ python gen_block_summaries.py 0 10 \
+    --code_metadata_dir ./output_dir_for_code_metadata/ \
     --documented_code_dir ./documented_code \
     --block_line_length 10 \
     --model gpt-3.5-turbo-1106
@@ -82,11 +83,11 @@ $ python gen_block_summaries.py 0 10 \
 
 This phase focuses on generating detailed and high-level global summaries for the dataset. It is required to complete the block summary generation prior to this step. The detailed global summary is derived from the block summaries and line-by-line commented code, whereas the high-level global summary is based on the detailed global summary.
 ```
-$ python gen_global_summaries.py 0 10 \
+$ python gen_global_summary.py 0 10 \
     --documented_code_dir ./documented_code \
     --model gpt-3.5-turbo-1106 \
     --detailed
-$ python gen_global_summaries.py 0 10 \
+$ python gen_global_summary.py 0 10 \
     --documented_code_dir ./documented_code \
     --model gpt-3.5-turbo-1106
 ```
@@ -218,13 +219,13 @@ Model checkpoints: [drive_link](https://drive.google.com/drive/folders/184TAdFog
 
 ## Citation
 
-Please cite using the following bibtex entry:
+Please cite with the following format; formal format will be updated after publication or release:
 
 ```
-@inproceedings{zhang2024mgverilog,
-  title={{MG-Verilog:} Multi-grained Dataset Towards Enhanced LLM-assisted Verilog Generation},
-  author={Zhang, Yongan and Yu, Zhongzhi and Fu, Yonggan and Wan, Cheng and Lin, Yingyan (Celine)},
-  booktitle={The First IEEE International Workshop on LLM-Aided Design (LAD'24)}, 
+@inproceedings{dac1166,
+  title={{Data4AIGChip:} An Automated Data Generation and Validation Flow for LLM-assisted Hardware Design},
+  author={anonymized, anonymized},
+  booktitle={2024 DAC Under Review}, 
   year={2024}
 }
 ```

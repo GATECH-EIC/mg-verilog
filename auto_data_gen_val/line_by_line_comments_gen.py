@@ -1,7 +1,7 @@
 import os
 import sys
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)),os.environ.get("CHATBOT_BACKEND_DIR"),os.environ.get("SRC_DIR")))
 import openai
 import requests
@@ -103,8 +103,8 @@ if __name__ == "__main__":
                     continue
             code_repo_documentor.package_documented_code(output_dir_part)
             #copy assets to output dir
-            shutil.copytree(os.environ.get("ASSETS_DIR"), os.path.join(output_dir_part, "assets"))
+            shutil.copytree(os.environ.get("ASSET_DIR"), os.path.join(os.path.join(code_metadata_dir, "part{}".format(code_part)), "assets"))
             #copy vector store to output dir
-            shutil.copytree(code_vec_store, os.path.join(output_dir_part, "code_vec_store"))
+            shutil.copytree(code_vec_store, os.path.join(os.path.join(code_metadata_dir, "part{}".format(code_part)), "code_vec_store"))
             
 

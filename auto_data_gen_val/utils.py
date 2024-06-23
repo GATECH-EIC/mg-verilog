@@ -1,7 +1,7 @@
 import os
 import sys
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)),os.environ.get("CHATBOT_BACKEND_DIR"),os.environ.get("SRC_DIR")))
 import openai
 import requests
@@ -232,7 +232,7 @@ def form_function_retrival_prompt(df, comment_file, line_ids: list = []):
     return prompt
 
 def form_commenting_prompt(df, comment_file, line_ids, 
-                           trace_back_lines = 5, look_forward_lines = 5, 
+                           trace_back_lines = 15, look_forward_lines = 15, 
                            helper_function_names = [], helper_function_summarys = [],
                            format_instruction = None):
     #sort line ids
@@ -955,7 +955,7 @@ if __name__ == "__main__":
                 f.write(shared_lib[module])    
         print("Shared lib length: {}".format(len(shared_lib)))
     
-    total_clusters = 10 
+    total_clusters =  (len(file_list) // 1000) + 1
     if not generating_from_existing_file_structure:
         print("Generating src to be documented...")
         #evenly separate the files into 10 parts

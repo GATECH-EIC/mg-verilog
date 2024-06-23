@@ -4,7 +4,8 @@ from dotenv import load_dotenv
 load_dotenv()
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)),os.environ.get("CHATBOT_BACKEND_DIR"),os.environ.get("SRC_DIR")))
 
-sys.path.append("../verilog_eval/verilog_eval")
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../verilog_eval/verilog_eval"))
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 from evaluation import evaluate_functional_correctness
 
 import openai
@@ -479,8 +480,8 @@ class CodeDataset:
     def init_vectorstore(self, global_summary_chain_from_verilog_eval = True,
                          block_summary_model="gpt-3.5-turbo-1106",
                          global_summary_model="gpt-3.5-turbo-1106",
-                         global_summary_example_cstr_json = "./preprocess_data/example_code_strings_detailed_instructions.json",
-                         global_summary_example_code_description_file = "../verilog_eval/descriptions/VerilogDescription_Machine.jsonl"
+                         global_summary_example_cstr_json = f"{os.environ.get('DATA4AIGCHIP_HOME')}/auto_data_gen_val/preprocess_data/example_code_strings_detailed_instructions.json",
+                         global_summary_example_code_description_file = f"{os.environ.get('DATA4AIGCHIP_HOME')}/verilog_eval/descriptions/VerilogDescription_Machine.jsonl"
                          ):
         self.vectorstore_per_code_small = {}
         self.vectorstore_per_code_large = {}

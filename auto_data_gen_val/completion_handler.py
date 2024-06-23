@@ -214,7 +214,7 @@ class Chatbot:
         self.skip_supplement_summary = skip_supplement_summary
         
 
-        self.convers_memory_length = 1
+        self.convers_memory_length = 2
         #if the convers store dir does not exist, create it
         if not os.path.exists(convers_store_dir):
             os.makedirs(convers_store_dir)
@@ -240,7 +240,7 @@ class Chatbot:
         self.code_summary_response_parser = PydanticOutputParserMessages(pydantic_object=Code_summary_format)
 
         self.line_by_line_format_instructions = """Format your answer in json format, with entries of "comment_exist", "comment", and "line_number"; \n "comment_exist" is a List of boolean value denating if comment exist for each code line.\n "comment" is list of string comments, each of which is the comment for the corresponding code line; do not include original code here; empty string if comment does not exist. \n "line_number" is {line_numbers}. \n Here is the response format: {"comment_exist": [bool, bool], "comment": [str comment, str comment], "line_number": {line_numbers}}\n Only include the json response! Do not include anything else!\n"""
-        self.line_by_line_comment_converse_chain = SimpleConverseChain(model="llama2", temperature=0.7, max_tokens=512, 
+        self.line_by_line_comment_converse_chain = SimpleConverseChain(model="gpt-4-turbo", temperature=0.7, max_tokens=2048, 
                                                   verbose=False, 
                                                   memory=self.converse_memory,
                                                   memory_length=self.convers_memory_length,
@@ -250,12 +250,12 @@ class Chatbot:
                                                   json_mode=True)
         
         self.summary_format_instructions = """Format your answer in json format, with entries of "usage" and "summary", denoting usage of the code block and summary of the code, respectively\n Do not include answer other than the json string.\n"""
-        self.summarize_comments_chain = SimpleConverseChain(model="llama2", temperature=0.7, max_tokens=384,
+        self.summarize_comments_chain = SimpleConverseChain(model="gpt-4-turbo", temperature=0.7, max_tokens=2048,
                                                             verbose=False,
                                                             have_memory=False,
                                                             customized_format_instructions=self.summary_format_instructions,
                                                             output_parser=self.code_summary_response_parser)
-        self.reverse_code_gen_chain = SimpleConverseChain(model="llama2", temperature=0.7, max_tokens=256,
+        self.reverse_code_gen_chain = SimpleConverseChain(model="gpt-4-turbo", temperature=0.7, max_tokens=1024,
                                                             verbose=False,
                                                             have_memory=False)
 

@@ -125,8 +125,19 @@ class Usage_summary(BaseModel):
 class Global_summary:
     def __init__(self, model="gpt-3.5-turbo-1106", system_prompt=None) -> None:
         if system_prompt is None:
-            self.system_prompt = "Explain the high-level functionality of the Verilog module. Use as many high-level concepts that are directly applicable to describe the code. Use text-based truth tables and state transition graphs when necessary. Speak as if this was a specification for a circuit designer to implement. You should only reply with descriptive natural language and not use any code."
-        self.sft_data_gen_chain =  SimpleConverseChain(system_prompt=self.system_prompt, model=model, temperature=0.95, max_tokens=512, top_p=0.95, have_memory=False, verbose=False)
+            self.system_prompt = """
+                                - Please act as an expert in hardware design using Verilog or SystemVerilog. 
+                                - Explain the high-level functionality of the module, whose definition is provided below. 
+                                - Use as many high-level concepts that are directly applicable to describe the code of the whole design. 
+                                - Use text-based truth tables and state transition graphs when necessary. 
+                                - You are only required to describe the top module's functionality. 
+                                - Explicitly mention the specifications of inputs and outputs in terms of their bit-width, range, and any other constraints or considerations.
+                                - Pay special attention to the temporal logic of the signals; e.g., how the registers are updated, how the state machines transition, etc.
+                                - Pay attention that the logic to decide a signal state can be spread across different places in the code, be sure to note them all.
+                                - Assume your response will be used by an experienced hardware designer as the only basis for implementing the equivalent functionality and provide the same top module input/output interface as described in the code.
+                                - Assume the experienced hardware designer will implement all functionalities in just one module. 
+                                """
+        self.sft_data_gen_chain =  SimpleConverseChain(system_prompt=self.system_prompt, model=model, temperature=0.95, max_tokens=2048, top_p=0.95, have_memory=False, verbose=False)
 
 
     def gen_global_summary(self, 
@@ -195,9 +206,9 @@ class Global_summary:
         pd.DataFrame(results).to_json(result_file, orient="records", lines=True)
         return results
 
-def gen_block_summary_chain(model="llama2", temperature=0.7, max_tokens=256):
+def gen_block_summary_chain(model="llama2", temperature=0.7, max_tokens=1024):
     if "gpt" in model:
-        llm = ChatOpenAI(max_retries=4, model=model, temperature=temperature, max_tokens=max_tokens, request_timeout=10)
+        llm = ChatOpenAI(max_retries=4, model=model, temperature=temperature, max_tokens=max_tokens, request_timeout=40)
     else:
         llm = HuggingFaceTextGenInference(
                         inference_server_url=os.environ.get("LLAMA_INFERENCE_SERVER_URL"),
@@ -232,7 +243,7 @@ def gen_block_summary_chain(model="llama2", temperature=0.7, max_tokens=256):
 
 def detail_steps_chain(model="llama2", temperature=0.7, max_tokens=256): 
     if "gpt" in model:
-        llm = ChatOpenAI(max_retries=0, model=model, temperature=temperature, max_tokens=max_tokens, request_timeout=10)
+        llm = ChatOpenAI(max_retries=0, model=model, temperature=temperature, max_tokens=max_tokens, request_timeout=40)
     else:
         llm = HuggingFaceTextGenInference(
                         inference_server_url=os.environ.get("LLAMA_INFERENCE_SERVER_URL"),
@@ -281,7 +292,7 @@ class Func_lookup(BaseModel):
 def func_name_lookup_chain(model="llama2", temperature=0.7, max_tokens=128, language="verilog"):
 
     if "gpt" in model:
-        cheap_model = ChatOpenAI(max_retries=2, model=model, temperature=temperature, max_tokens=max_tokens,request_timeout=10)
+        cheap_model = ChatOpenAI(max_retries=2, model=model, temperature=temperature, max_tokens=max_tokens,request_timeout=40)
     else:
         cheap_model = HuggingFaceTextGenInference(
                         inference_server_url=os.environ.get("LLAMA_INFERENCE_SERVER_URL"),
@@ -289,7 +300,7 @@ def func_name_lookup_chain(model="llama2", temperature=0.7, max_tokens=128, lang
                         )
 
     # gpt-3.5-turbo or gpt-4-0613
-    expensive_model = ChatOpenAI(max_retries=0, model="gpt-4-1106-preview", temperature=temperature, max_tokens=max_tokens, request_timeout=10,
+    expensive_model = ChatOpenAI(max_retries=0, model="gpt-4-1106-preview", temperature=temperature, max_tokens=max_tokens, request_timeout=40,
                                  model_kwargs={"response_format": { "type": "json_object" }})
 
     parser = PydanticOutputParser(pydantic_object=Func_lookup)
@@ -391,9 +402,9 @@ class SimpleConverseChain:
 
             if "gpt" in model:
                 if not self.json_mode:
-                    cheap_model = ChatOpenAI(max_retries=5, model=model, temperature=temperature, max_tokens=max_tokens, top_p=top_p, request_timeout=10)
+                    cheap_model = ChatOpenAI(max_retries=5, model=model, temperature=temperature, max_tokens=max_tokens, top_p=top_p, request_timeout=40)
                 else:
-                    cheap_model = ChatOpenAI(max_retries=5, model=model, temperature=temperature, max_tokens=max_tokens, top_p=top_p, request_timeout=10,  
+                    cheap_model = ChatOpenAI(max_retries=5, model=model, temperature=temperature, max_tokens=max_tokens, top_p=top_p, request_timeout=40,  
                                              model_kwargs={"response_format": {"type": "json_object"}})
             else:
                 cheap_model = HuggingFaceTextGenInference(
@@ -405,9 +416,9 @@ class SimpleConverseChain:
                                 # top_p=0.1
                                 )
             if not self.json_mode:
-                expensive_model = ChatOpenAI(max_retries=5, model="gpt-3.5-turbo-1106", temperature=temperature, max_tokens=max_tokens, top_p=top_p, request_timeout=10)
+                expensive_model = ChatOpenAI(max_retries=5, model="gpt-3.5-turbo-1106", temperature=temperature, max_tokens=max_tokens, top_p=top_p, request_timeout=40)
             else:
-                expensive_model = ChatOpenAI(max_retries=5, model="gpt-3.5-turbo-1106", temperature=temperature, max_tokens=max_tokens, request_timeout=10,  
+                expensive_model = ChatOpenAI(max_retries=5, model="gpt-3.5-turbo-1106", temperature=temperature, max_tokens=max_tokens, request_timeout=40,  
                                          model_kwargs={"response_format": { "type": "json_object" }})
 
             if "gpt" in model:
@@ -449,22 +460,22 @@ class SimpleConverseChain:
 
             if "gpt" in model:
                 if not self.json_mode:
-                    cheap_model = ChatOpenAI(max_retries=5, model=model, temperature=temperature, max_tokens=max_tokens, top_p=top_p, request_timeout=10)
+                    cheap_model = ChatOpenAI(max_retries=5, model=model, temperature=temperature, max_tokens=max_tokens, top_p=top_p, request_timeout=40)
                 else:
                     cheap_model = ChatOpenAI(max_retries=5, model=model, temperature=temperature, max_tokens=max_tokens, top_p=top_p,  
                                              model_kwargs={"response_format": { "type": "json_object" }},
-                                             request_timeout=10)
+                                             request_timeout=40)
             else:
                 cheap_model = HuggingFaceTextGenInference(
                                 inference_server_url=os.environ.get("LLAMA_INFERENCE_SERVER_URL"),
                                 max_new_tokens=max_tokens
                                 )
             if not self.json_mode:
-                expensive_model = ChatOpenAI(max_retries=5, model="gpt-3.5-turbo-1106", temperature=temperature, max_tokens=max_tokens, request_timeout=10)
+                expensive_model = ChatOpenAI(max_retries=5, model="gpt-3.5-turbo-1106", temperature=temperature, max_tokens=max_tokens, request_timeout=40)
             else:
                 expensive_model = ChatOpenAI(max_retries=5, model="gpt-3.5-turbo-1106", temperature=temperature, max_tokens=max_tokens,  
                                          model_kwargs={"response_format": { "type": "json_object" }},
-                                         request_timeout=10)
+                                         request_timeout=40)
                 
             if "gpt" in model:
                 chat_llm_chain = LLMChain(

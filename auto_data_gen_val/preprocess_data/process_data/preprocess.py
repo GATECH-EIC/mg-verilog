@@ -1,6 +1,6 @@
 import sys
 import os
-sys.path.append(os.path.abspath("../../"))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 from datasets import load_dataset, load_from_disk, Dataset
 import uuid
 import shutil
@@ -45,9 +45,31 @@ def store_dataset_entries_to_file(dataset, output_dir, output_suffix=".v"):
     return None
 
 
-def separate_modules_in_dataset(raw_dataset_name, raw_dataset_dir, output_dir="./separated_modules"):
-    raw_dataset = load_dataset(raw_dataset_name, cache_dir=raw_dataset_dir)
-    raw_dataset = raw_dataset["train"]
+def read_files_from_directory(directory):
+    data = []
+    for idx, filename in enumerate(os.listdir(directory)):
+        file_path = os.path.join(directory, filename)
+        if os.path.isfile(file_path):
+            with open(file_path, 'r', encoding='utf-8') as file:
+                content = file.read()
+                data.append({
+                    "text": content,
+                    "task_id": str(idx)
+                })
+    return data
+
+def create_dataset(directory):
+    data = read_files_from_directory(directory)
+    return Dataset.from_list(data)
+
+def separate_modules_in_dataset(raw_dataset_name, raw_dataset_dir, output_dir="./separated_modules", customized_dataset_dir=None):
+    if customized_dataset_dir is None:
+        raw_dataset = load_dataset(raw_dataset_name, cache_dir=raw_dataset_dir)
+        raw_dataset = raw_dataset["train"]
+    else:
+        #create a huggingface dataset object with "text" and "task_id" fields
+        raw_dataset =  create_dataset(customized_dataset_dir)
+        
     module_num = []
     print(raw_dataset.shape)
     new_dataset_dict = {"text": [], "module_name": [], "task_id": [], "code_str_before_preprocessing": []}
@@ -135,7 +157,7 @@ def remove_premod_postmod_lines(row):
 # remove rows without "module" and "endmodule" keywords
 def valid_content(row):
 
-    tmp_module_inst_dir = "tmp_module_inst_valid_content/"
+    tmp_module_inst_dir = "tmp/tmp_module_inst_valid_content/"
     module_inst_json = "module_inst{}.json".format(row["task_id"])
     module_inst_dict = {row["task_id"]: {"code_name": row["module_name"]}}
     with open(os.path.join(tmp_module_inst_dir, module_inst_json), "w") as f:
@@ -193,7 +215,7 @@ def valid_content(row):
 
     has_keyword = "always" in row or "assign" in row or "always_ff" in row or "always_comb" in row or "always_latch" in row
 
-    return valid_module and has_keyword and lines <= 200
+    return valid_module and has_keyword and lines <= 200*16
 
 
 # remove rows with more than 1024 tokens
@@ -203,7 +225,7 @@ def valid_len(row):
     # tokens = len(row["text"]) / 4
     # tokenizer = Tokenizer(model_path="../finetuning/llama/tokenizer.model")
 
-    tmp_module_inst_dir = "tmp_module_inst_valid_len/"
+    tmp_module_inst_dir = "tmp/tmp_module_inst_valid_len/"
     module_inst_json = "module_inst{}.json".format(row["task_id"])
     module_inst_dict = {row["task_id"]: {"code_name": row["module_name"]}}
     with open(os.path.join(tmp_module_inst_dir, module_inst_json), "w") as f:
@@ -211,7 +233,7 @@ def valid_len(row):
 
     tokenizer = tiktoken.encoding_for_model("gpt-3.5-turbo")
     tokens = len(tokenizer.encode(row["text"]))
-    return tokens <= 1024
+    return tokens <= 1024*16
 
 
 def valid_syntax_with_module_inst(row):
@@ -225,33 +247,46 @@ def valid_syntax_with_module_inst(row):
     if not os.path.exists(asset_dir):
         os.makedirs(os.path.dirname(asset_dir), exist_ok=True)
 
-    tmp_module_inst_dir = "tmp_module_inst_syntax/"
+    tmp_module_inst_dir = "tmp/tmp_module_inst_syntax/"
     module_inst_json = "module_inst{}.json".format(raw_row["task_id"])
     
     with open(path, "w") as f:
         f.write(row)
 
     try:
-        ast, directives = parse([path], debug=False, outputdir=asset_dir, preprocess_output="tmp/preprocess.output.{}".format(file_id))
-        output = StringIO()
-        ast.show(buf=output)
-        for lineno, directive in directives:
-            output.write('Line %d : %s' % (lineno, directive))
-        rslt = output.getvalue()
-        module_inst_list = []
-        for line in rslt.splitlines():
-            if line.strip().startswith("InstanceList"):
-                module_name = line.split(":")[1].strip().split(" ")[0]
-                module_line_number = int(line.split(":")[1].strip().split(" ")[2].replace(")",""))
-                module_inst_list.append(module_name)
-            elif line.strip().startswith("ModuleDef"):
-                module_def_name = line.split(":")[1].strip().split(" ")[0] 
-                if module_def_name != raw_row["module_name"]:
-                    raise Exception("Module def name parsed using pyverilog:({}) is not the same as the one in the dataset:({})".format(module_def_name, raw_row["module_name"]))
-        module_inst_list = list(set(module_inst_list))
-        module_inst_dict = {raw_row["task_id"]: {"code_name": raw_row["module_name"], "module_inst_list": module_inst_list}}
-        with open(os.path.join(tmp_module_inst_dir, module_inst_json), "w") as f:
-            json.dump(module_inst_dict, f, indent=4)
+        #some times pyverilog may just fail ... for even valid syntax
+        try:
+            ast, directives = parse([path], debug=False, outputdir=asset_dir, preprocess_output="tmp/preprocess.output.{}".format(file_id))
+            output = StringIO()
+            ast.show(buf=output)
+            for lineno, directive in directives:
+                output.write('Line %d : %s' % (lineno, directive))
+            rslt = output.getvalue()
+            module_inst_list = []
+            for line in rslt.splitlines():
+                if line.strip().startswith("InstanceList"):
+                    module_name = line.split(":")[1].strip().split(" ")[0]
+                    module_line_number = int(line.split(":")[1].strip().split(" ")[2].replace(")",""))
+                    module_inst_list.append(module_name)
+                elif line.strip().startswith("ModuleDef"):
+                    module_def_name = line.split(":")[1].strip().split(" ")[0] 
+                    if module_def_name != raw_row["module_name"]:
+                        raise Exception("Module def name parsed using pyverilog:({}) is not the same as the one in the dataset:({})".format(module_def_name, raw_row["module_name"]))
+            module_inst_list = list(set(module_inst_list))
+            module_inst_dict = {raw_row["task_id"]: {"code_name": raw_row["module_name"], "module_inst_list": module_inst_list}}
+            with open(os.path.join(tmp_module_inst_dir, module_inst_json), "w") as f:
+                json.dump(module_inst_dict, f, indent=4)
+        except Exception as e:
+            #just try iverilog
+            try:
+                subprocess.run(["iverilog", "-o", f"./tmp/{str(uuid.uuid4())}.out", path], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+                #just we cannot parse submodules
+                module_inst_list = []
+                module_inst_dict = {raw_row["task_id"]: {"code_name": raw_row["module_name"], "module_inst_list": module_inst_list}}
+                with open(os.path.join(tmp_module_inst_dir, module_inst_json), "w") as f:
+                    json.dump(module_inst_dict, f, indent=4)
+            except subprocess.CalledProcessError as e:
+                raise Exception("Iverilog failed to compile the module")
         #delete the file
         os.remove(path)
         shutil.rmtree(asset_dir)
@@ -276,7 +311,7 @@ def valid_syntax(row):
     if not os.path.exists(asset_dir):
         os.makedirs(os.path.dirname(asset_dir), exist_ok=True)
 
-    tmp_module_inst_dir = "tmp_module_inst_syntax/"
+    tmp_module_inst_dir = "tmp/tmp_module_inst_syntax/"
     module_inst_json = "module_inst{}.json".format(raw_row["task_id"])
 
     with open(path, "w") as f:
@@ -320,7 +355,7 @@ def valid_syntax(row):
             json.dump(module_inst_dict, f, indent=4)
         return False
 
-def merge_module_insts(module_inst_dir="tmp_module_inst/", output_json_name = "module_inst.json"):
+def merge_module_insts(module_inst_dir="tmp/tmp_module_inst/", output_json_name = "module_inst.json"):
     module_inst_dict = {}
     for file_name in os.listdir(module_inst_dir):
         if file_name.endswith(".json"):
@@ -380,7 +415,7 @@ class VerilogEval_Dataprocess:
     def f_valid_content(self, dataset):
         print("=="*20)
         print("Content filtering ...")
-        tmp_module_inst_dir = "tmp_module_inst_valid_content/"
+        tmp_module_inst_dir = "tmp/tmp_module_inst_valid_content/"
         if not os.path.exists(tmp_module_inst_dir):
             os.makedirs(tmp_module_inst_dir)
         data_content = dataset.filter(valid_content, num_proc=48)
@@ -391,7 +426,7 @@ class VerilogEval_Dataprocess:
     def f_valid_len(self, dataset):
         print("=="*20)
         print("Token length filtering ...")
-        tmp_module_inst_dir = "tmp_module_inst_valid_len/"
+        tmp_module_inst_dir = "tmp/tmp_module_inst_valid_len/"
         if not os.path.exists(tmp_module_inst_dir):
             os.makedirs(tmp_module_inst_dir)
         data_content = dataset.filter(valid_len)
@@ -402,7 +437,7 @@ class VerilogEval_Dataprocess:
     def f_valid_syntax(self, dataset):
         print("=="*20)
         print("Syntax filtering ...")
-        tmp_module_inst_dir = "tmp_module_inst_syntax/"        
+        tmp_module_inst_dir = "tmp/tmp_module_inst_syntax/"        
         if not os.path.exists(tmp_module_inst_dir):
             os.makedirs(tmp_module_inst_dir)
         if not os.path.exists("tmp"):
@@ -416,7 +451,7 @@ class VerilogEval_Dataprocess:
     def f_valid_syntax_with_module_inst(self, dataset):
         print("=="*20)
         print("Syntax filtering with modules...")
-        tmp_module_inst_dir = "tmp_module_inst_syntax/"        
+        tmp_module_inst_dir = "tmp/tmp_module_inst_syntax/"        
         if not os.path.exists(tmp_module_inst_dir):
             os.makedirs(tmp_module_inst_dir)
         if not os.path.exists("tmp"):
@@ -432,7 +467,7 @@ class VerilogEval_Dataprocess:
         print("De-duplicating ...")
         data_content, duplicate_clusters = deduplicate_dataset(dataset, jaccard_threshold=threshold)
         #dump the duplicate clusters
-        with open("duplicate_clusters.json", "w") as f:
+        with open("tmp/duplicate_clusters.json", "w") as f:
             json.dump(duplicate_clusters, f, indent=4)
         print("=="*20)
         return data_content
@@ -445,43 +480,33 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("raw_dataset_output_dir", help="output dir of the raw dataset", type=str)
+    #optional args
+    parser.add_argument("-customized_dataset_dir", help="customized dataset dir", type=str, default=None)
     args = parser.parse_args()
     raw_dataset_output_dir = args.raw_dataset_output_dir
+    customized_dataset_dir = args.customized_dataset_dir
+    #create raw_dataset_output_dir if not exists
+    if not os.path.exists(raw_dataset_output_dir):
+        os.makedirs(raw_dataset_output_dir)
+        
+    
 
-    _ , module_num = separate_modules_in_dataset("shailja/Verilog_GitHub", "./cache", output_dir="./ckpt_separated_modules")
-    # exit()
-
-    VerilogEval_Dataprocess0 = VerilogEval_Dataprocess(raw_dataset_name="shailja/Verilog_GitHub",  raw_dataset_cache_dir="./ckpt_separated_modules", lfd=True)
+    _ , module_num = separate_modules_in_dataset("shailja/Verilog_GitHub", "./cache", output_dir=f"tmp/ckpt_separated_modules", customized_dataset_dir=customized_dataset_dir)
+    VerilogEval_Dataprocess0 = VerilogEval_Dataprocess(raw_dataset_name="shailja/Verilog_GitHub",  raw_dataset_cache_dir=f"tmp/ckpt_separated_modules", lfd=True)
     VerilogEval_Dataprocess0.load_raw_dataset()
     dataset = VerilogEval_Dataprocess0.f_remove_comments(VerilogEval_Dataprocess0.raw_dataset)
-    dataset.save_to_disk("./ckpt1_user_name_remove_comments")
     dataset = VerilogEval_Dataprocess0.f_remove_premod_postmod_lines(dataset)
-    dataset.save_to_disk("./ckpt2_user_name_remove_premod_postmod_lines")
-
     dataset = VerilogEval_Dataprocess0.f_valid_content(dataset)
-    dataset.save_to_disk("./ckpt3_user_name_valid_content")
     dataset = VerilogEval_Dataprocess0.f_valid_len(dataset)
-    dataset.save_to_disk("./ckpt3_user_name_before_syntax")
     
-    # dataset = VerilogEval_Dataprocess0.f_valid_syntax(dataset)
-    # dataset.save_to_disk("./ckpt3_user_name_no_prelines")
     dataset = VerilogEval_Dataprocess0.f_valid_syntax_with_module_inst(dataset)
-    dataset.save_to_disk("./ckpt3_user_name_no_prelines_with_module_inst")
     dataset = VerilogEval_Dataprocess0.f_de_duplicate(dataset, threshold=0.8)
     print(dataset.shape)
-    dataset.save_to_disk("./ckpt4_user_name_de_dup_with_module_inst")
 
-    module_inst_dict = merge_module_insts(module_inst_dir = "tmp_module_inst_syntax/")
+    module_inst_dict = merge_module_insts(module_inst_dir = f"tmp/tmp_module_inst_syntax/", output_json_name = f"{raw_dataset_output_dir}/../module_inst.json")
     module_name_to_task_id_mapping = gen_module_name_to_task_id_mapping(module_inst_dict)
-    print(len(module_inst_dict.keys()))
-    print(len(module_name_to_task_id_mapping.keys()))
     #dump the mapping as deduplication is not decisive, use the version before deduplication
-    with open("module_name_to_task_id_mapping.json", "w") as f:
+    with open(f"{raw_dataset_output_dir}/../module_name_to_task_id_mapping.json", "w") as f:
         json.dump(module_name_to_task_id_mapping, f, indent=4)
-    # exit()
 
-    #if want to use the module inst to recover the raw dataset generation ckpt3_user_name_before_syntax is needed, as the idx of the json is based on ckpt3_user_name_before_syntax 
-    dataset_to_store = load_from_disk("./ckpt4_user_name_de_dup_with_module_inst")
-    # raw_dataset_output_dir = "/home/user_name/DAC_2024/ckpt3_user_name_valid_content"
-    store_dataset_entries_to_file(dataset_to_store, raw_dataset_output_dir)
-    # exit()
+    store_dataset_entries_to_file(dataset, raw_dataset_output_dir)

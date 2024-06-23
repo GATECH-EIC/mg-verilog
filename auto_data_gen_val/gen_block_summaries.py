@@ -17,12 +17,14 @@ if __name__ == "__main__":
 
     #optional arguments
     parser.add_argument("--documented_code_dir", help="documented code directory", type=str, default="/home/user_name/DAC_2024/ckpts/")
+    parser.add_argument("--code_metadata_dir", help="code metadata directory", type=str, default="/home/user_name/DAC_2024/ckpt3_user_name_valid_content_code_metadata/")
     parser.add_argument("--block_line_length", help="block line length", type=int, default=10)
     parser.add_argument("--model", help="model", type=str, default="gpt-3.5-turbo-1106")
     args = parser.parse_args()
     code_part_start_id = args.start_id
     total_code_parts = args.total_code_parts
     documented_code_dir = args.documented_code_dir
+    code_metadata_dir = args.code_metadata_dir
     block_line_length = args.block_line_length
     model = args.model
 
@@ -34,7 +36,7 @@ if __name__ == "__main__":
         for code_part_id in range(code_part_start_id, total_code_parts):
             if not os.path.exists("{}/part{}".format(dataset_metadata_dir, code_part_id)):
                 os.makedirs("{}/part{}".format(dataset_metadata_dir, code_part_id))
-            src_code_dir = os.path.join(documented_code_dir, "part_{}".format(code_part_id), "documented_code")
+            src_code_dir = os.path.join(documented_code_dir, "part{}".format(code_part_id))
             codedb = CodeDataset(
                                 src_code_dir,
                                 bookkeeping_dir="{}/part{}/bookkeeping/".format(dataset_metadata_dir,code_part_id),
@@ -42,8 +44,8 @@ if __name__ == "__main__":
                                 force_refresh=False,
                                 cb=cb
                                 )
-            csv_code_dir = os.path.join(documented_code_dir, "part_{}".format(code_part_id), "assets", "verilog", "code_and_comment_src", "csv_src", "csv_code_src")
-            csv_comment_dir = os.path.join(documented_code_dir, "part_{}".format(code_part_id), "assets", "verilog", "code_and_comment_src", "csv_src", "csv_new_comment_src")
+            csv_code_dir = os.path.join(code_metadata_dir, "part{}".format(code_part_id), "assets", "verilog", "code_and_comment_src", "csv_src", "csv_code_src")
+            csv_comment_dir = os.path.join(code_metadata_dir, "part{}".format(code_part_id), "assets", "verilog", "code_and_comment_src", "csv_src", "csv_new_comment_src")
             codedb.load_and_split_code(skip_small_doc=True, split_by_line=True,
                                         line_length=block_line_length,
                                         based_on_code_lines_only=True, 

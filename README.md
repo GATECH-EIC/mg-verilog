@@ -21,7 +21,7 @@ For data generation, design creation, and validation purposes, we employ the `LL
 For setting up the inference server, detailed guidance is provided in our dedicated section. Please refer to [inference_server_setup](./inference_server_setup/README.md) for comprehensive steps and tips
 
 
-### Quick Run with Customized Raw Source Code Repo
+## Quick Run with Customized Raw Source Code Repo
 Setup API key and inference server in [.env](auto_data_gen_val/.env). Default to OpenAI APIs for convenience (No need for local inference server if you only use OpenAI APIs).
 
 
@@ -232,10 +232,10 @@ Model checkpoints: [drive_link](https://drive.google.com/drive/folders/184TAdFog
 Please cite with the following format; formal format will be updated after publication or release:
 
 ```
-@inproceedings{dac1166,
-  title={{Data4AIGChip:} An Automated Data Generation and Validation Flow for LLM-assisted Hardware Design},
-  author={anonymized, anonymized},
-  booktitle={2024 DAC Under Review}, 
+@inproceedings{zhang2024mgverilog,
+  title={{MG-Verilog:} Multi-grained Dataset Towards Enhanced LLM-assisted Verilog Generation},
+  author={Zhang, Yongan and Yu, Zhongzhi and Fu, Yonggan and Wan, Cheng and Lin, Yingyan (Celine)},
+  booktitle={The First IEEE International Workshop on LLM-Aided Design (LAD'24)}, 
   year={2024}
 }
 ```

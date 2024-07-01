@@ -26,6 +26,7 @@ Setup API key and inference server in [.env](auto_data_gen_val/.env). Default to
 
 
 `cd document_customized_repo`
+
 `./document_customized_repo.sh test_dir output_test`
 
 Replace `test_dir` with your own Verilog code source repo. Currently it does not support nested directories. For resume functionality, please follow the following detailed instructions (Uncertainty in LLM generation can cause the line-by-line comment output format check fail and require resuming if you do not want to lose the progress in this repo).

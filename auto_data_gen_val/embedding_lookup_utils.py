@@ -478,6 +478,7 @@ class CodeDataset:
         return vectorstore_per_code_large
 
     def init_vectorstore(self, global_summary_chain_from_verilog_eval = True,
+                         detailed = True,
                          block_summary_model="gpt-3.5-turbo-1106",
                          global_summary_model="gpt-3.5-turbo-1106",
                          global_summary_example_cstr_json = f"{os.environ.get('DATA4AIGCHIP_HOME')}/auto_data_gen_val/preprocess_data/example_code_strings_detailed_instructions.json",
@@ -500,7 +501,7 @@ class CodeDataset:
         self.block_summary_chain = gen_block_summary_chain(model=block_summary_model)
         self.global_summary_chain_from_verilog_eval = global_summary_chain_from_verilog_eval
         if not self.global_summary_chain_from_verilog_eval:
-            global_summary = Global_summary(model=global_summary_model)
+            global_summary = Global_summary(model=global_summary_model, detailed=detailed)
             self.example_cstr_json = global_summary_example_cstr_json
             with open(self.example_cstr_json, "r") as f:
                 self.example_code_strings = json.load(f)
@@ -520,9 +521,7 @@ class CodeDataset:
                            force_refresh_global_summary_high_level=False,
                             force_refresh_global_summary_detailed=False,
                            force_refresh_block_summary=False,
-                           global_summary_example_desc_key="detail_description",
-                           use_global_summary_for_block_summary=True, 
-                           validate_global_summary=False):
+                           global_summary_example_desc_key="detail_description"):
         total_codes = len(self.codes)
         doc_count = 0
         self.block_summary_placeholding = block_summary_placeholding
@@ -542,15 +541,6 @@ class CodeDataset:
                 if self.codes[code]["block_summary"] is None or self.codes[code]["block_summary"][0] is None:
                     print("Generating block summary for " + code)
                     gen_from_scratch = True
-
-                    # if len(self.codes_inMemory[code]["splitted_docs_large"]) == 1 and use_global_summary_for_block_summary:
-                    #     print("Attempting to reuse the global summary")
-                    #     if self.codes[code]["global_summary_from_line_comments"] is not None:
-                    #         self.codes[code]["block_summary"] = [self.codes[code]["global_summary_from_line_comments"]]
-                    #         gen_from_scratch = False
-                    #     else:
-                    #         print("No global summary found, generating block summary from scratch")
-                    #         gen_from_scratch = True
                             
                     if gen_from_scratch:
                         doc_len = len(self.codes_inMemory[code]["splitted_docs_large"])

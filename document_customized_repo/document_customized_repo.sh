@@ -49,3 +49,6 @@ python ../auto_data_gen_val/gen_global_summary.py 0 1 \
     --code_metadata_dir $OUTPUT_DIR/output_dir_for_code_metadata/ \
     --documented_code_dir $OUTPUT_DIR/documented_code \
     --model gpt-4-turbo
+
+
+python decode_results.py $OUTPUT_DIR

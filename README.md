@@ -21,6 +21,15 @@ For data generation, design creation, and validation purposes, we employ the `LL
 For setting up the inference server, detailed guidance is provided in our dedicated section. Please refer to [inference_server_setup](./inference_server_setup/README.md) for comprehensive steps and tips
 
 
+### Quick Run with Customized Raw Source Code Repo
+Setup API key and inference server in [.env](auto_data_gen_val/.env). Default to OpenAI APIs for convenience (No need for local inference server if you only use OpenAI APIs).
+
+
+`cd document_customized_repo`
+`./document_customized_repo.sh test_dir output_test`
+
+Replace `test_dir` with your own Verilog code source repo. Currently it does not support nested directories. For resume functionality, please follow the following detailed instructions (Uncertainty in LLM generation can cause the line-by-line comment output format check fail and require resuming if you do not want to lose the progress in this repo).
+
 ## Dataset Generation
 
 ### Raw Dataset Pre-processing

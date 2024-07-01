@@ -62,7 +62,8 @@ if __name__ == "__main__":
                                         "{}/part{}/global_detailed_summary.json".format(dataset_metadata_dir, code_part_id)
                                         )
             else:
-                codedb.init_vectorstore(global_summary_chain_from_verilog_eval=True,
+                codedb.init_vectorstore(global_summary_chain_from_verilog_eval=False,
+                                        detailed=False,
                                         global_summary_model=model,
                                         global_summary_example_cstr_json = f"{os.environ.get('DATA4AIGCHIP_HOME')}/auto_data_gen_val/preprocess_data/example_code_strings_simple_instructions.json",
                                         global_summary_example_code_description_file= f"{os.environ.get('DATA4AIGCHIP_HOME')}/verilog_eval/descriptions/VerilogDescription_Machine.jsonl"

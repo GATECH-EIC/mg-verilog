@@ -123,20 +123,31 @@ class Usage_summary(BaseModel):
     summary: str = Field(description="summary")
 
 class Global_summary:
-    def __init__(self, model="gpt-3.5-turbo-1106", system_prompt=None) -> None:
+    def __init__(self, model="gpt-3.5-turbo-1106", system_prompt=None, detailed = True) -> None:
+        self.detailed = detailed
         if system_prompt is None:
-            self.system_prompt = """
-                                - Please act as an expert in hardware design using Verilog or SystemVerilog. 
-                                - Explain the high-level functionality of the module, whose definition is provided below. 
-                                - Use as many high-level concepts that are directly applicable to describe the code of the whole design. 
-                                - Use text-based truth tables and state transition graphs when necessary. 
-                                - You are only required to describe the top module's functionality. 
-                                - Explicitly mention the specifications of inputs and outputs in terms of their bit-width, range, and any other constraints or considerations.
-                                - Pay special attention to the temporal logic of the signals; e.g., how the registers are updated, how the state machines transition, etc.
-                                - Pay attention that the logic to decide a signal state can be spread across different places in the code, be sure to note them all.
-                                - Assume your response will be used by an experienced hardware designer as the only basis for implementing the equivalent functionality and provide the same top module input/output interface as described in the code.
-                                - Assume the experienced hardware designer will implement all functionalities in just one module. 
-                                """
+            if self.detailed:
+                self.system_prompt = """
+                                    - Please act as an expert in hardware design using Verilog or SystemVerilog. 
+                                    - Explain the high-level functionality of the module, whose definition is provided below. 
+                                    - Use as many high-level concepts that are directly applicable to describe the code of the whole design. 
+                                    - Use text-based truth tables and state transition graphs when necessary. 
+                                    - You are only required to describe the top module's functionality. 
+                                    - Explicitly mention the specifications of inputs and outputs in terms of their bit-width, range, and any other constraints or considerations.
+                                    - Pay special attention to the temporal logic of the signals; e.g., how the registers are updated, how the state machines transition, etc.
+                                    - Pay attention that the logic to decide a signal state can be spread across different places in the code, be sure to note them all.
+                                    - Assume your response will be used by an experienced hardware designer as the only basis for implementing the equivalent functionality and provide the same top module input/output interface as described in the code.
+                                    - Assume the experienced hardware designer will implement all functionalities in just one module. 
+                                    """
+            else:
+                self.system_prompt = """
+                                    - Please act as an expert in hardware design using Verilog or SystemVerilog. 
+                                    - Explain the high-level functionality of the module, whose definition is provided below. 
+                                    - Use as many high-level concepts that are directly applicable to describe the code of the whole design. 
+                                    - You are only required to describe the top module's functionality. 
+                                    - Assume your description will even be understood by a non-hardware expert; or this non-hardware expert can deliver this description with reasonable amount of training.
+                                    - Strict rule: Be very concise and high-level, avoid low-level details.
+                                    """
         self.sft_data_gen_chain =  SimpleConverseChain(system_prompt=self.system_prompt, model=model, temperature=0.95, max_tokens=2048, top_p=0.95, have_memory=False, verbose=False)
 
 
@@ -180,7 +191,11 @@ class Global_summary:
         user_prompt += code_string
         user_prompt += "```\n"
         
-        response = self.sft_data_gen_chain.chat(example_prompt+user_prompt)
+        #store the prompt in "global_summary_detailed_{self.detailed}.txt"
+        with open("global_summary_detailed_{}.txt".format(self.detailed), "w") as f:
+            f.write(example_prompt + "\n" + context_prompt + "\n" + user_prompt + "\n" + self.system_prompt + "\n" )
+
+        response = self.sft_data_gen_chain.chat(example_prompt + "\n" + context_prompt + "\n" + user_prompt + "\n" + self.system_prompt + "\n" )
         return response
     
     def code_gen(self, description_file, eval_file, result_file, repeat=10):

@@ -1,5 +1,8 @@
-# MG-Verilog: Multi-grained Dataset Towards Enhanced LLM-assisted Verilog Generation
-This is a repository for Data4AIGChip, an automated framework for data generation and validation, designed to enhance the fine-tuning of Large Language Models (LLMs) in accelerator code generation. This repository encompasses the following key components
+<p align="center">
+<img src="imgs/mg_verilog_logo-removebg-preview.png" alt="mg_verilog_logo" width="110">
+</p><h2><p align="center">MG-Verilog: Multi-grained Dataset Towards Enhanced LLM-assisted Verilog Generation</p></h2>
+
+This is a repository for MG-Verilog, an automated framework for data generation and validation, designed to enhance the fine-tuning of Large Language Models (LLMs) in accelerator code generation. This repository encompasses the following key components
 - Dataset generation
 - Supervised fine-tuning
 - Collected datasets and fine-tuned model checkpoints

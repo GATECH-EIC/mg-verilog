@@ -245,7 +245,7 @@ def valid_syntax_with_module_inst(row):
     asset_dir = "tmp/asset{}".format(file_id)
     #check and make asset dir
     if not os.path.exists(asset_dir):
-        os.makedirs(os.path.dirname(asset_dir), exist_ok=True)
+        os.makedirs(asset_dir, exist_ok=True)
 
     tmp_module_inst_dir = "tmp/tmp_module_inst_syntax/"
     module_inst_json = "module_inst{}.json".format(raw_row["task_id"])
@@ -309,7 +309,7 @@ def valid_syntax(row):
     asset_dir = "tmp/asset{}".format(file_id)
     #check and make asset dir
     if not os.path.exists(asset_dir):
-        os.makedirs(os.path.dirname(asset_dir), exist_ok=True)
+        os.makedirs(asset_dir, exist_ok=True)
 
     tmp_module_inst_dir = "tmp/tmp_module_inst_syntax/"
     module_inst_json = "module_inst{}.json".format(raw_row["task_id"])

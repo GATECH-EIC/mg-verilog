@@ -41,21 +41,20 @@ Begin by pre-processing the raw dataset, sourced from [Benchmarking Large Langua
 
 Prior to initiating this process, ensure that the setup has been fully completed. The pre-processing relies on PyVerilog and Icarus Verilog (and iverilog) to parse the raw dataset. This will take a while to finish.
 ```
-$ cd auto_data_gen_val/preprocess_data/process_data
-$ python preprocess.py ./raw_dataset_output_path/ # This will generate the pre-processed dataset with correct syntax and token length limit (default to 1024)
-$ cd ../../
+$ export OUTPUT_DIR=test_output
+$ python preprocess.py $OUTPUT_DIR/raw_code # This will generate the pre-processed dataset with correct syntax
 ```
 
 To facilitate more flexible description generation later and to organize metadata, such as module dependencies, we will partition the dataset into distinct parts.
 ```
-$ python utils.py \
-    --src_code_dir ./preprocess_data/process_data/raw_dataset_output_path/ \
-    --src_code_metadata_file ./preprocess_data/process_data/module_inst.json \
-    --output_dir ./partitioned_dataset_output_path/ \
-    --shared_lib_dir ./directory_to_store_common_modules/ \
-    --output_code_metadata_dir ./output_dir_for_code_metadata/ \
+$ python auto_data_gen_val/utils.py \
+    --src_code_dir $OUTPUT_DIR/raw_code \
+    --src_code_metadata_file $OUTPUT_DIR/module_inst.json \
+    --output_dir $OUTPUT_DIR/partitioned_dataset_output_path/ \
+    --shared_lib_dir $OUTPUT_DIR/directory_to_store_common_modules/ \
+    --output_code_metadata_dir $OUTPUT_DIR/output_dir_for_code_metadata/ \
     --output_code_metadata_file codes.json \
-    --module_to_task_id_map_file ./preprocess_data/process_data/module_name_to_task_id_mapping.json
+    --module_to_task_id_map_file $OUTPUT_DIR/module_name_to_task_id_mapping.json
 ```
 
 ### PoT Dataset Generation
@@ -72,11 +71,11 @@ Alternatively, the [Auto Restart Script](./auto_data_gen_val/auto_restart_script
 ```
 $ python line_by_line_comments_gen.py \
     --total_parts 10 \
-    --output_dir ./documented_code \
-    --src_code_dir ./partitioned_dataset_output_path/ \
-    --code_metadata_dir ./output_dir_for_code_metadata/ \
-    --code_lib_path ./directory_to_store_common_modules/ \
-    --code_vec_store ../code_vec_store/test/ \
+    --output_dir $OUTPUT_DIR/documented_code \
+    --src_code_dir $OUTPUT_DIR/partitioned_dataset_output_path/ \
+    --code_metadata_dir $OUTPUT_DIR/output_dir_for_code_metadata/ \
+    --code_lib_path $OUTPUT_DIR/directory_to_store_common_modules/ \
+    --code_vec_store $OUTPUT_DIR/code_vec_store/test/ \
     --discard_original_comment
 ```
 
@@ -86,32 +85,35 @@ This step involves generating block summaries based on the line-by-line document
 
 For generating these summaries, we recommend using `openai-gpt` models due to their capacity for handling larger token lengths.
 ```
-$ python gen_block_summaries.py 0 10 \
-    --code_metadata_dir ./output_dir_for_code_metadata/ \
-    --documented_code_dir ./documented_code \
+$ python auto_data_gen_val/gen_block_summaries.py 0 10 \
+    --code_metadata_dir $OUTPUT_DIR/output_dir_for_code_metadata/ \
+    --documented_code_dir $OUTPUT_DIR/documented_code \
     --block_line_length 10 \
-    --model gpt-3.5-turbo-1106
+    --model gpt-4-turbo
 ```
 #### Global Summary Generation
 
 This phase focuses on generating detailed and high-level global summaries for the dataset. It is required to complete the block summary generation prior to this step. The detailed global summary is derived from the block summaries and line-by-line commented code, whereas the high-level global summary is based on the detailed global summary.
 ```
-$ python gen_global_summary.py 0 10 \
-    --documented_code_dir ./documented_code \
-    --model gpt-3.5-turbo-1106 \
+$ python auto_data_gen_val/gen_global_summary.py 0 10 \
+    --code_metadata_dir $OUTPUT_DIR/output_dir_for_code_metadata/ \
+    --documented_code_dir $OUTPUT_DIR/documented_code \
+    --model gpt-4-turbo \
     --detailed
-$ python gen_global_summary.py 0 10 \
-    --documented_code_dir ./documented_code \
-    --model gpt-3.5-turbo-1106
+
+$ python auto_data_gen_val/gen_global_summary.py 0 10 \
+    --code_metadata_dir $OUTPUT_DIR/output_dir_for_code_metadata/ \
+    --documented_code_dir $OUTPUT_DIR/documented_code \
+    --model gpt-4-turbo
 ```
 #### Packaging the Dataset
 
 This script packages the dataset into `description` and `code` pairs. The `descriptions` include `Detailed Global Summary`, `High-Level Global Summaries`, and `Block Summaries`. Additionally, a merged dataset encompassing all three types of description-code pairs will be created. By default, these datasets are saved to `./packaged_dataset/`.
 ```
-$ python dataset_utils.py \
-    --doced_dataset_dir ./documented_code \
+$ python auto_data_gen_val/dataset_utils.py \
+    --doced_dataset_dir $OUTPUT_DIR/documented_code \
     --total_part 10 \
-    --packaged_dir ./packaged_dataset \
+    --packaged_dir $OUTPUT_DIR/packaged_dataset \
     --package_detailed_description \
     --package_simple_description \
     --package_llm2_block_summary_to_pure_code_one_shot_dataset \
@@ -123,39 +125,46 @@ $ python dataset_utils.py \
 The following code will generate various description types for the benchmark code samples in VerilogEval, which are adapted from [HDLBits](https://hdlbits.01xz.net/wiki/Main_Page)
 ```
 #prepare the src code from VerilogEval problem file
-$ python verilog_eval_to_part_data.py \
+$ python auto_data_gen_val/verilog_eval_to_part_data.py \
     --eval_file ../verilog_eval/data/VerilogEval_Machine.jsonl \
-    --data_dir ./benchmark_code_files/ \
-    --meta_data_dir ./benchmark_metadata_files/
+    --data_dir $OUTPUT_DIR/benchmark_code_files/ \
+    --meta_data_dir $OUTPUT_DIR/benchmark_metadata_files/
     
 #generate line-by-line comments
-$ python line_by_line_comments_gen.py \
+$ python auto_data_gen_val/line_by_line_comments_gen.py \
     --total_parts 1 \
-    --output_dir ./benchmark_documented_code \
-    --src_code_dir ./benchmark_code_files/ \
-    --code_metadata_dir ./benchmark_metadata_files/ \
-    --code_lib_path ./benchmark_code_files/ \
-    --code_vec_store ../benchmark_code_vec_store/test/ \
+    --output_dir $OUTPUT_DIR/benchmark_documented_code \
+    --src_code_dir $OUTPUT_DIR/benchmark_code_files/ \
+    --code_metadata_dir $OUTPUT_DIR/benchmark_metadata_files/ \
+    --code_lib_path $OUTPUT_DIR/benchmark_code_files/ \
+    --code_vec_store $OUTPUT_DIR/benchmark_code_vec_store/test/ \
     --skip_supplement_summary \
     --discard_original_comment
+
 #generate block summaries
-$ python gen_block_summaries.py 0 1 \
-    --documented_code_dir ./benchmark_documented_code \
+$ python auto_data_gen_val/gen_block_summaries.py 0 1 \
+    --code_metadata_dir $OUTPUT_DIR/benchmark_metadata_files/ \
+    --documented_code_dir $OUTPUT_DIR/benchmark_documented_code \
     --block_line_length 10 \
-    --model gpt-3.5-turbo-1106
+    --model gpt-4-turbo
+
 #generate global summaries
-$ python gen_global_summaries.py 0 1 \
-    --documented_code_dir ./benchmark_documented_code \
-    --model gpt-3.5-turbo-1106 \
+$ python auto_data_gen_val/gen_global_summaries.py 0 1 \
+    --code_metadata_dir $OUTPUT_DIR/benchmark_metadata_files/ \
+    --documented_code_dir $OUTPUT_DIR/benchmark_documented_code \
+    --model gpt-4-turbo \
     --detailed
-$ python gen_global_summaries.py 0 1 \
-    --documented_code_dir ./benchmark_documented_code \
-    --model gpt-3.5-turbo-1106
+
+$ python auto_data_gen_val/gen_global_summaries.py 0 1 \
+    --code_metadata_dir $OUTPUT_DIR/benchmark_metadata_files/ \
+    --documented_code_dir $OUTPUT_DIR/benchmark_documented_code \
+    --model gpt-4-turbo     
+    
 #package the dataset
-$ python dataset_utils.py \
-    --doced_dataset_dir ./benchmark_documented_code \
+$ python auto_data_gen_val/dataset_utils.py \
+    --doced_dataset_dir $OUTPUT_DIR/benchmark_documented_code \
     --total_part 1 \
-    --packaged_dir ./benchmark_packaged_dataset \
+    --packaged_dir $OUTPUT_DIR/benchmark_packaged_dataset \
     --package_hdlbits_global_summary_description_file \
     --package_hdlbits_block_summary_description_file
 ```
@@ -167,9 +176,9 @@ This script validates the dataset by utilizing the generated descriptions to rev
 Due to the intermittent stability of the OpenAI API service with multi-processing, this feature is currently disabled. Please note that validation may be time-consuming due to the extensive size of the dataset.
 
 ```
-$ python code_validate.py \
-    --dataset_dir ./packaged_dataset/detailed_description_dataset \
-    --output_dir ./packaged_dataset/detailed_description_dataset_val
+$ python auto_data_gen_val/code_validate.py \
+    --dataset_dir $OUTPUT_DIR/packaged_dataset/detailed_description_dataset \
+    --output_dir $OUTPUT_DIR/packaged_dataset/detailed_description_dataset_val
 ```
 
 ## Supervised Fine-Tuning
@@ -184,45 +193,44 @@ We utilize the PoT dataset for model fine-tuning and performance evaluation. The
 - Typically, a training loss below 0.01 or completion of 10 epochs is indicative of sufficient training for achieving decent pass rates.
 
 ```
-cd ..
 cd sft_code
 ./train.sh 
 ```
 
 ### Evaluation Process
 
+***By using the example settings above, you can evaluate the performance of the models fine-tuned on different dataset formats in PoT structure.***
+
+
+Launch the evaluation:
+```
+cd model_eval_qlora
+./gen.sh
+```
+
 To evaluate models trained on different dataset formats, modify the `--checkpoint_dir` parameter. You can evaluate the trained models against various description formats by altering `--desc_file`, `--desc_key`, and `--prompt_type`. Below is an example of how to implement these changes for evaluation:
 
 On high-level global summaries:
 ```
---desc_file ../auto_data_gen_val/benchmark_packaged_dataset/hdlbits_description_simple_description.jsonl \
+--desc_file $OUTPUT_DIR/benchmark_packaged_dataset/hdlbits_description_simple_description.jsonl \
 --desc_key simple_description \
 --prompt_type baseline
 ```
 
 On detailed global summaries:
 ```
---desc_file ../auto_data_gen_val/benchmark_packaged_dataset/hdlbits_description_detailed_description.jsonl \
+--desc_file $OUTPUT_DIR/benchmark_packaged_dataset/hdlbits_description_detailed_description.jsonl \
 --desc_key detailed_description \
 --prompt_type baseline
 ```
 
 On block summaries:
 ```
---desc_file ../auto_data_gen_val/benchmark_packaged_dataset/hdlbits_for_llm2_eval.jsonl \
+--desc_file $OUTPUT_DIR/benchmark_packaged_dataset/hdlbits_for_llm2_eval.jsonl \
 --desc_key block_to_code_description \
 --prompt_type llm2_block_to_code
 ```
 
-***By using the example settings above, you can evaluate the performance of the models fine-tuned on different dataset formats in PoT structure.***
-
-
-Launch the evaluation:
-```
-cd ..
-cd model_eval_qlora
-./gen.sh
-```
 
 ## Collected Datasets and fine-tuned model checkpoints
 Datasets: [drive_link](https://drive.google.com/drive/folders/1NJHFGX1wgGZV8pky3W7sUkjNf2pTHxfx?usp=sharing)

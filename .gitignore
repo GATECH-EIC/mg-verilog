@@ -2,3 +2,5 @@
 auto_data_gen_val/assets/verilog/code_and_comment_src
 auto_data_gen_val/assets/verilog/converse
 verilog_eval
+tmp
+cache

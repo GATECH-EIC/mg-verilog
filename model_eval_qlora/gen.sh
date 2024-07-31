@@ -11,11 +11,11 @@ accelerate launch --multi_gpu generate2.py \
     --hf_token "your_hf_token_if_you_want_to_use_it" \
     --max_new_tokens 1024 \
     --temperature 0.7 \
-    --desc_file ../auto_doc_part_dataset/benchmark_packaged_dataset/hdlbits_for_llm2_eval.jsonl \
+    --desc_file $OUTPUT_DIR/benchmark_packaged_dataset/hdlbits_for_llm2_eval.jsonl \
     --desc_key "block_to_code_description" \
     --prompt_type "llm2_block_to_code" \
     --eval_file ../verilog_eval/data/VerilogEval_Machine.jsonl \
-    --output_file ./data/gen.jsonl \
+    --output_file $OUTPUT_DIR/data/gen.jsonl \
     --fp16 \
     --sample_k 20 \
     --result_name Test \

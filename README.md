@@ -41,6 +41,7 @@ Begin by pre-processing the raw dataset, sourced from [Benchmarking Large Langua
 
 Prior to initiating this process, ensure that the setup has been fully completed. The pre-processing relies on PyVerilog and Icarus Verilog (and iverilog) to parse the raw dataset. This will take a while to finish.
 ```
+$ export DATA4AIGCHIP_HOME=<mg_verilog_path>
 $ export OUTPUT_DIR=test_output
 $ python preprocess.py $OUTPUT_DIR/raw_code # This will generate the pre-processed dataset with correct syntax
 ```

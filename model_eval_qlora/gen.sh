@@ -8,7 +8,7 @@ accelerate launch --multi_gpu generate2.py \
     --base_model "codellama/CodeLlama-7b-Instruct-hf" \
     --tokenizer_type "code_llama" \
     --cache_dir "./HF_cache/" \
-    --hf_token "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" \
+    --hf_token "" \
     --max_new_tokens 1024 \
     --temperature 0.7 \
     --desc_file ../verilog_eval/descriptions/VerilogDescription_Machine.jsonl \

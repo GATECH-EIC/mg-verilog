@@ -42,6 +42,9 @@ import warnings
 from packaging import version
 from packaging.version import parse
 
+from transformers import LlamaForCausalLM, LlamaConfig
+from accelerate import init_empty_weights, load_checkpoint_and_dispatch
+
 
 # PROMPT = (
 #     "You only complete chats with syntax correct Verilog code. End the Verilog module code completion with 'endmodule'. Do not include module, input and output definitions."
@@ -185,26 +188,42 @@ def get_accelerate_model(model_name, tokenizer_type, checkpoint, bf16, fp16, cac
         max_memory = {'': max_memory[local_rank]}
 
     compute_dtype = (torch.float16 if fp16 else (torch.bfloat16 if bf16 else torch.float32))
-    model = AutoModelForCausalLM.from_pretrained(
-        model_name, 
-        cache_dir=cache_dir,
-        load_in_4bit=False,
-        load_in_8bit=True,
+
+    ckpt_path = checkpoint
+
+    config = LlamaConfig.from_pretrained(os.path.join(ckpt_path, 'config.json'))
+    state_dict = torch.load(os.path.join(ckpt_path, 'pytorch_model.bin'))
+    with init_empty_weights():
+        model = LlamaForCausalLM(config)
+    model = load_checkpoint_and_dispatch(
+        model,
+        checkpoint=os.path.join(ckpt_path, 'pytorch_model.bin'),
         device_map=device_map,
-        max_memory= max_memory,
-        quantization_config=BitsAndBytesConfig(
-            load_in_4bit=False,
-            load_in_8bit=True,
-            llm_int8_threshold=6.0,
-            llm_int8_has_fp16_weight=False,
-            bnb_4bit_compute_dtype=compute_dtype,
-            bnb_4bit_use_double_quant=True,
-            bnb_4bit_quant_type="nf4",
-        ),
-        torch_dtype=(torch.float32 if fp16 else (torch.bfloat16 if bf16 else torch.float32)),
-        trust_remote_code=False,
-        token=hf_token
+        max_memory=max_memory,
+        dtype=torch.float16  # Change dtype if needed
     )
+    model.eval()
+        
+    # model = AutoModelForCausalLM.from_pretrained(
+    #     model_name, 
+    #     cache_dir=checkpoint,
+    #     load_in_4bit=False,
+    #     load_in_8bit=True,
+    #     device_map=device_map,
+    #     max_memory= max_memory,
+    #     quantization_config=BitsAndBytesConfig(
+    #         load_in_4bit=False,
+    #         load_in_8bit=True,
+    #         llm_int8_threshold=6.0,
+    #         llm_int8_has_fp16_weight=False,
+    #         bnb_4bit_compute_dtype=compute_dtype,
+    #         bnb_4bit_use_double_quant=True,
+    #         bnb_4bit_quant_type="nf4",
+    #     ),
+    #     torch_dtype=(torch.float32 if fp16 else (torch.bfloat16 if bf16 else torch.float32)),
+    #     trust_remote_code=False,
+    #     token=hf_token
+    # )
 
     setattr(model, 'model_parallel', True)
     setattr(model, 'is_parallelizable', True)
@@ -268,8 +287,9 @@ def get_accelerate_model(model_name, tokenizer_type, checkpoint, bf16, fp16, cac
     # if not args.full_finetune:
     if True:
         if checkpoint is not None:
-            print("Loading adapters from checkpoint.")
-            model = PeftModel.from_pretrained(model, join(checkpoint, 'adapter_model'), is_trainable=True)
+            pass
+            # print("Loading adapters from checkpoint.")
+            # model = PeftModel.from_pretrained(model, join(checkpoint, 'adapter_model'), is_trainable=True)
         else:
             raise Exception("Only loading checkpoint is allowed.")
             # print(f'adding LoRA modules...')

@@ -7,16 +7,16 @@ accelerate launch --multi_gpu generate2.py \
     --model_type "qlora" \
     --base_model "codellama/CodeLlama-7b-Instruct-hf" \
     --tokenizer_type "code_llama" \
-    --cache_dir "/home/user_name/HF_cache/" \
-    --hf_token "your_hf_token_if_you_want_to_use_it" \
+    --cache_dir "./HF_cache/" \
+    --hf_token "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" \
     --max_new_tokens 1024 \
     --temperature 0.7 \
-    --desc_file $OUTPUT_DIR/benchmark_packaged_dataset/hdlbits_for_llm2_eval.jsonl \
-    --desc_key "block_to_code_description" \
-    --prompt_type "llm2_block_to_code" \
+    --desc_file ../verilog_eval/descriptions/VerilogDescription_Machine.jsonl \
+    --desc_key "detail_description" \
+    --prompt_type "baseline" \
     --eval_file ../verilog_eval/data/VerilogEval_Machine.jsonl \
-    --output_file $OUTPUT_DIR/data/gen.jsonl \
+    --output_file ./data/gen.jsonl \
     --fp16 \
     --sample_k 20 \
     --result_name Test \
-    --batch_size 2 
+    --batch_size 1

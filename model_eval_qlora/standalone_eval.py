@@ -113,5 +113,5 @@ if __name__ == '__main__':
     gen_file = "./data/gen.jsonl" 
     result_file = "./data/gen.jsonl_results.jsonl"
     #process_jsonl_file(gen_file, "test.jsonl")
-    #evaluate(gen_file="test.jsonl", prob_file=prob_file)
-    results_profile(result_file, prob_file)
+    evaluate(gen_file=gen_file, prob_file=prob_file)
+    #results_profile(result_file, prob_file)

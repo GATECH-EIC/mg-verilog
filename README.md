@@ -221,7 +221,7 @@ On high-level global summaries:
 On detailed global summaries:
 ```
 --desc_file $OUTPUT_DIR/benchmark_packaged_dataset/hdlbits_description_detailed_description.jsonl \
---desc_key detailed_description \
+--desc_key detail_description \
 --prompt_type baseline
 ```
 
